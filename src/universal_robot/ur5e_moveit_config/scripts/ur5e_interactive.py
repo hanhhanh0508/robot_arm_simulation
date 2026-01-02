@@ -121,6 +121,11 @@ class UR5eInteractiveControl:
         t.text = label
         
         self.marker_pub.publish(t)
+    def move_home_joint(self):
+    rospy.loginfo("→ Di chuyển HOME bằng joint...")
+    home_joints = [0, -1.57, 1.57, 0, 1.57, 0]
+    self.arm.go(home_joints, wait=True)
+    self.arm.stop()
 
     def move_to_position(self, pos, label="TARGET"):
         """Di chuyển đến vị trí"""
@@ -183,14 +188,12 @@ class UR5eInteractiveControl:
     # ============================================
     
     def function_1_home(self):
-        """1. Về vị trí HOME"""
-        rospy.loginfo("\n" + "="*60)
-        rospy.loginfo("CHỨC NĂNG 1: VỀ VỊ TRÍ HOME")
-        rospy.loginfo("="*60)
-        
-        self.clear_all_objects()
-        self.draw_sphere_marker(self.positions["home"], (0, 1, 0, 1), "HOME", 1)
-        self.move_to_position(self.positions["home"], "HOME")
+    rospy.loginfo("\n" + "="*60)
+    rospy.loginfo("CHỨC NĂNG 1: VỀ VỊ TRÍ HOME")
+    rospy.loginfo("="*60)
+
+    self.clear_all_objects()
+    self.move_home_joint()
 
     def function_2_pick_place(self):
         """2. Pick & Place với vật cản"""
