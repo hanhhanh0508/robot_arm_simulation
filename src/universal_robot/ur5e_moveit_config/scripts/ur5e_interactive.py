@@ -23,15 +23,23 @@ class UR5eInteractiveControl:
         moveit_commander.roscpp_initialize(sys.argv)
 
         self.arm = moveit_commander.MoveGroupCommander("manipulator")
+  # ===== CẤU HÌNH PLANNING =====
+        self.arm.set_planning_time(15.0)
+        self.arm.set_num_planning_attempts(20)
+        self.arm.set_max_velocity_scaling_factor(0.2)
+        self.arm.set_max_acceleration_scaling_factor(0.2)
+
+        # CHỌN PLANNER
+        self.arm.set_planner_id("RRTConnect")
         self.scene = moveit_commander.PlanningSceneInterface()
         
         rospy.sleep(2)
 
         # Cấu hình planning
-        self.arm.set_planning_time(8.0)
-        self.arm.set_num_planning_attempts(10)
-        self.arm.set_max_velocity_scaling_factor(0.3)
-        self.arm.set_max_acceleration_scaling_factor(0.3)
+        self.arm.set_planning_time(20.0)
+        self.arm.set_num_planning_attempts(25)
+        self.arm.set_max_velocity_scaling_factor(0.2)
+        self.arm.set_max_acceleration_scaling_factor(0.2)
 
         self.reference_frame = self.arm.get_planning_frame()
         
@@ -69,6 +77,49 @@ class UR5eInteractiveControl:
         
         rospy.sleep(0.5)
         rospy.loginfo("✓ Đã xóa tất cả objects")
+
+def create_obstacles(self, num=2):
+    """Tạo vật cản ngẫu nhiên"""
+    rospy.loginfo(f"Tạo {num} vật cản...")
+    
+    self.clear_all_objects()
+    
+    # Vùng HOME cần tránh
+    home_pos = self.positions["home"]
+    
+    for i in range(num):
+        # Lặp cho đến khi tìm được vị trí hợp lệ
+        valid = False
+        while not valid:
+            x = random.uniform(0.28, 0.42)
+            y = random.uniform(-0.15, 0.15)
+            z = random.uniform(0.25, 0.38)
+            
+            # Kiểm tra khoảng cách đến HOME
+            dist_to_home = ((x-home_pos[0])**2 + 
+                           (y-home_pos[1])**2 + 
+                           (z-home_pos[2])**2)**0.5
+            
+            if dist_to_home > 0.15:  # Cách HOME ít nhất 15cm
+                valid = True
+        
+        size = random.uniform(0.06, 0.10)
+        
+        pose = PoseStamped()
+        pose.header.frame_id = self.reference_frame
+        pose.pose.position.x = x
+        pose.pose.position.y = y
+        pose.pose.position.z = z
+        pose.pose.orientation.w = 1.0
+        
+        name = f"obstacle_{i}"
+        self.scene.add_box(name, pose, (size, size, size))
+        
+        rospy.loginfo(f"  + Vật cản {i+1}: ({x:.2f}, {y:.2f}, {z:.2f})")
+    
+    rospy.sleep(1)
+    self.obstacle_created = True
+    rospy.loginfo("✓ Đã tạo vật cản")
 
     def draw_sphere_marker(self, position, color, label, marker_id):
         """Vẽ sphere marker tại vị trí"""
