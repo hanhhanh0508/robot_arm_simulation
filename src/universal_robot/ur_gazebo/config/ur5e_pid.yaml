@@ -1,0 +1,15 @@
+gazebo_ros_control:
+  pid_gains:
+    shoulder_pan_joint:  {p: 2000.0, i: 10.0, d: 100.0}
+    shoulder_lift_joint: {p: 2000.0, i: 10.0, d: 100.0}
+    elbow_joint:         {p: 2000.0, i: 10.0, d: 100.0}
+    wrist_1_joint:       {p: 500.0,  i: 5.0,  d: 50.0}
+    wrist_2_joint:       {p: 500.0,  i: 5.0,  d: 50.0}
+    wrist_3_joint:       {p: 500.0,  i: 5.0,  d: 50.0}
+
+
+## 2. **LỖI CHÍNH: TIMED OUT khi di chuyển đến PICK**
+
+[INFO] [1767456766.325149, 83.084000]: Moving to PICK...
+[INFO] [1767456781.526422846, 94.489000000]: ABORTED: TIMED_OUT
+[WARN] [1767456781.526744, 94.480000]: ✗ Failed PICK
