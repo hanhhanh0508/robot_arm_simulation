@@ -1,0 +1,22 @@
+<launch>
+  <!-- 1️⃣ Spawn UR5 robot in Gazebo -->
+  <include file="$(find ur_gazebo)/launch/ur5.launch"/>
+
+  <!-- 2️⃣ Load ros_controllers -->
+  <rosparam file="$(find ur5_gazebo_control)/config/ros_controllers.yaml" command="load"/>
+
+  <!-- 3️⃣ Spawn joint_state_controller -->
+  <node name="joint_state_controller_spawner"
+        pkg="controller_manager"
+        type="spawner"
+        args="joint_state_controller"
+        output="screen"/>
+
+  <!-- 4️⃣ Spawn scaled_pos_joint_traj_controller (delay) -->
+  <node name="scaled_pos_joint_traj_controller_spawner"
+        pkg="controller_manager"
+        type="spawner"
+        args="scaled_pos_joint_traj_controller"
+        output="screen"
+        launch-prefix="bash -c 'sleep 5; $0 $@'"/>
+</launch>
