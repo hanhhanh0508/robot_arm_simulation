@@ -104,21 +104,27 @@ class FixedPickPlace:
     
     def joint_state_callback(self, msg):
         """Callback - Tự động normalize góc khớp"""
-        self.raw_joints = {}
-        self.current_joints = {}
+        # ✅ TẠO DICT TẠM để tránh race condition
+        temp_raw = {}
+        temp_current = {}
         
         for i, name in enumerate(msg.name):
             if name in self.joint_names:
                 raw_angle = msg.position[i]
                 normalized_angle = normalize_angle(raw_angle)
                 
-                self.raw_joints[name] = raw_angle
-                self.current_joints[name] = normalized_angle
+                temp_raw[name] = raw_angle
+                temp_current[name] = normalized_angle
         
-        # ✅ DEBUG: Chỉ log lần đầu nhận đủ 6 joints
-        if len(self.current_joints) == 6 and not hasattr(self, '_joints_logged'):
-            rospy.logdebug("✅ Nhận được đủ 6 joints: %s" % str(list(self.current_joints.keys())))
-            self._joints_logged = True
+        # ✅ CHỈ UPDATE KHI CÓ ĐỦ 6 JOINTS
+        if len(temp_current) == 6:
+            self.raw_joints = temp_raw
+            self.current_joints = temp_current
+            
+            # DEBUG: Log lần đầu
+            if not hasattr(self, '_joints_logged'):
+                rospy.logdebug("✅ Nhận được đủ 6 joints: %s" % str(list(self.current_joints.keys())))
+                self._joints_logged = True
     
     def fix_initial_state(self):
         """Kiểm tra và fix vị trí ban đầu nếu không hợp lệ"""
@@ -174,13 +180,22 @@ class FixedPickPlace:
         """Gửi trajectory đến góc khớp cụ thể (không qua MoveIt)"""
         rospy.loginfo("\n→ %s" % description)
         
+        # ✅ KIỂM TRA trước khi gửi
+        if self.current_joints is None or len(self.current_joints) < 6:
+            rospy.logerr("  ❌ Không đủ joint states!")
+            return False
+        
         # Tạo trajectory đơn giản
         goal = FollowJointTrajectoryGoal()
         goal.trajectory.joint_names = self.joint_names
         
         # Điểm hiện tại
         point1 = JointTrajectoryPoint()
-        point1.positions = [self.current_joints[name] for name in self.joint_names]
+        try:
+            point1.positions = [self.current_joints[name] for name in self.joint_names]
+        except KeyError as e:
+            rospy.logerr("  ❌ Thiếu joint: %s" % str(e))
+            return False
         point1.velocities = [0.0] * 6
         point1.time_from_start = rospy.Duration(0.0)
         
@@ -247,49 +262,67 @@ class FixedPickPlace:
         pose.orientation.w = q[3]
         
         for attempt in range(max_retries):
-            # ✅ FIX: Đảm bảo có đủ joints trước khi set state
-            if len(self.current_joints) < 6:
-                rospy.logwarn("  ⚠️ Chưa đủ 6 joints, đang đợi...")
+            # ✅ KIỂM TRA NGHIÊM NGẶT trước mỗi lần thử
+            if self.current_joints is None or len(self.current_joints) < 6:
+                rospy.logwarn("  ⚠️ Chưa đủ 6 joints (%d/6), đang đợi..." % 
+                             (len(self.current_joints) if self.current_joints else 0))
                 rospy.sleep(0.5)
                 continue
             
-            # ✅ FIX: Chuyển tuple thành list trước khi gán
-            current_state = self.arm.get_current_state()
-            positions_list = list(current_state.joint_state.position)
+            # ✅ KIỂM TRA từng joint có tồn tại không
+            missing = [n for n in self.joint_names if n not in self.current_joints]
+            if missing:
+                rospy.logwarn("  ⚠️ Thiếu joints: %s, đang đợi..." % str(missing))
+                rospy.sleep(0.5)
+                continue
             
-            # Cập nhật góc đã normalize
-            for i, name in enumerate(self.joint_names):
-                if name not in current_state.joint_state.name:
-                    rospy.logwarn("  ⚠️ Joint %s không có trong state!" % name)
-                    continue
-                idx = current_state.joint_state.name.index(name)
-                positions_list[idx] = self.current_joints[name]
-            
-            # Gán lại list đã cập nhật
-            current_state.joint_state.position = positions_list
-            
-            self.arm.set_start_state(current_state)
-            self.arm.set_pose_target(pose)
-            
-            rospy.loginfo("  Lần thử %d/%d..." % (attempt+1, max_retries))
-            plan = self.arm.plan()
-            
-            if isinstance(plan, tuple):
-                success = plan[0]
-                trajectory = plan[1]
-            else:
-                success = bool(plan.joint_trajectory.points)
-                trajectory = plan
-            
-            self.arm.clear_pose_targets()
-            
-            if success:
-                rospy.loginfo("  ✓ Plan OK!")
-                if self.execute_trajectory_direct(trajectory):
-                    return True
-            
-            rospy.logwarn("  ⚠️ Thử lại...")
-            rospy.sleep(0.5)
+            # ✅ Lấy state và cập nhật
+            try:
+                current_state = self.arm.get_current_state()
+                positions_list = list(current_state.joint_state.position)
+                
+                # Cập nhật góc đã normalize
+                for name in self.joint_names:
+                    if name not in current_state.joint_state.name:
+                        rospy.logwarn("  ⚠️ Joint %s không có trong state!" % name)
+                        continue
+                    idx = current_state.joint_state.name.index(name)
+                    positions_list[idx] = self.current_joints[name]
+                
+                # Gán lại list đã cập nhật
+                current_state.joint_state.position = positions_list
+                
+                self.arm.set_start_state(current_state)
+                self.arm.set_pose_target(pose)
+                
+                rospy.loginfo("  Lần thử %d/%d..." % (attempt+1, max_retries))
+                plan = self.arm.plan()
+                
+                if isinstance(plan, tuple):
+                    success = plan[0]
+                    trajectory = plan[1]
+                else:
+                    success = bool(plan.joint_trajectory.points)
+                    trajectory = plan
+                
+                self.arm.clear_pose_targets()
+                
+                if success:
+                    rospy.loginfo("  ✓ Plan OK!")
+                    if self.execute_trajectory_direct(trajectory):
+                        return True
+                
+                rospy.logwarn("  ⚠️ Thử lại...")
+                rospy.sleep(0.5)
+                
+            except KeyError as e:
+                rospy.logerr("  ❌ KeyError: %s - Đang thử lại..." % str(e))
+                rospy.sleep(0.5)
+                continue
+            except Exception as e:
+                rospy.logerr("  ❌ Exception: %s" % str(e))
+                rospy.sleep(0.5)
+                continue
         
         rospy.logerr("✗ Thất bại sau %d lần thử!" % max_retries)
         return False
