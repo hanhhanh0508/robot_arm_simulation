@@ -19,4 +19,8 @@
   -->
   <xacro:include filename="$(find ur_description)/urdf/inc/ur5e_macro.xacro"/>
   <xacro:ur5e_robot prefix="" />
+  <gazebo>
+    <plugin name="gazebo_ros_link_attacher"
+            filename="libgazebo_ros_link_attacher.so"/>
+  </gazebo>
 </robot>
