@@ -26,3 +26,30 @@ scaled_pos_joint_traj_controller:
   state_publish_rate: 500
   action_monitor_rate: 10
 
+# PID GAINS - QUAN TRỌNG!
+gazebo_ros_control:
+  pid_gains:
+    shoulder_pan_joint:
+      p: 1000.0
+      i: 10.0
+      d: 100.0
+    shoulder_lift_joint:
+      p: 1000.0
+      i: 10.0
+      d: 100.0
+    elbow_joint:
+      p: 1000.0
+      i: 10.0
+      d: 100.0
+    wrist_1_joint:
+      p: 500.0
+      i: 5.0
+      d: 50.0
+    wrist_2_joint:
+      p: 500.0
+      i: 5.0
+      d: 50.0
+    wrist_3_joint:
+      p: 500.0
+      i: 5.0
+      d: 50.0
