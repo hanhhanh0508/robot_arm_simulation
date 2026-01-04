@@ -210,40 +210,47 @@ class FixedPickPlace:
         pose.orientation.y = q[1]
         pose.orientation.z = q[2]
         pose.orientation.w = q[3]
-        
+         
         for attempt in range(max_retries):
-            # ✅ SET START STATE với normalized angles
+            # ✅ FIX: Chuyển tuple thành list trước khi gán
             current_state = self.arm.get_current_state()
+            
+            # Chuyển tuple thành list
+            positions_list = list(current_state.joint_state.position)
+            
+            # Cập nhật góc đã normalize
             for i, name in enumerate(self.joint_names):
                 idx = current_state.joint_state.name.index(name)
-                current_state.joint_state.position[idx] = self.current_joints[name]
-            
+                positions_list[idx] = self.current_joints[name]
+             
+            # Gán lại list đã cập nhật
+            current_state.joint_state.position = positions_list
+             
             self.arm.set_start_state(current_state)
             self.arm.set_pose_target(pose)
-            
+             
             rospy.loginfo("  Lần thử %d/%d..." % (attempt+1, max_retries))
             plan = self.arm.plan()
             
             if isinstance(plan, tuple):
-                success = plan[0]
-                trajectory = plan[1]
+               success = plan[0]
+               trajectory = plan[1]
             else:
-                success = bool(plan.joint_trajectory.points)
-                trajectory = plan
-            
+               success = bool(plan.joint_trajectory.points)
+               trajectory = plan
+             
             self.arm.clear_pose_targets()
-            
+             
             if success:
-                rospy.loginfo("  ✓ Plan OK!")
-                if self.execute_trajectory_direct(trajectory):
-                    return True
-            
+               rospy.loginfo("  ✓ Plan OK!")
+               if self.execute_trajectory_direct(trajectory):
+                   return True
+               
             rospy.logwarn("  ⚠️ Thử lại...")
             rospy.sleep(0.5)
-        
+            
         rospy.logerr("✗ Thất bại sau %d lần thử!" % max_retries)
-        return False
-    
+        return False    
     def create_obstacles(self, num=2):
         """Tạo vật cản"""
         rospy.loginfo("\nTạo %d vật cản..." % num)
