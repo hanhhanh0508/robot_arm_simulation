@@ -17,7 +17,7 @@ from geometry_msgs.msg import Pose, PoseStamped
 from visualization_msgs.msg import Marker
 from tf.transformations import quaternion_from_euler
 from gazebo_msgs.srv import SpawnModel, DeleteModel, GetModelState
-from gazebo_ros_link_attacher.srv import Attach, AttachRequest, Detach, DetachRequest
+from gazebo_ros_link_attacher.srv import Attach, AttachRequest
 
 def normalize_angle(angle):
     """Chuẩn hóa góc về [-π, π]"""
@@ -82,9 +82,7 @@ class PickPlaceWithGripper:
         # ✅ Kết nối Link Attacher (để "nắm" vật)
         rospy.loginfo("Đang kết nối Link Attacher...")
         rospy.wait_for_service('/link_attacher_node/attach', timeout=5.0)
-        rospy.wait_for_service('/link_attacher_node/detach', timeout=5.0)
         self.attach_srv = rospy.ServiceProxy('/link_attacher_node/attach', Attach)
-        self.detach_srv = rospy.ServiceProxy('/link_attacher_node/detach', Detach)
         rospy.loginfo("✓ Kết nối Gazebo + Attacher OK!")
         
         # Các vị trí
@@ -361,7 +359,7 @@ class PickPlaceWithGripper:
         req.link_name_1 = "wrist_3_link"  # Link gần end-effector
         req.model_name_2 = self.target_object
         req.link_name_2 = "link"
-        
+        req.attach = True 
         try:
             self.attach_srv.call(req)
             rospy.loginfo("✅ Đã nhặt vật!")
@@ -377,12 +375,13 @@ class PickPlaceWithGripper:
         
         rospy.loginfo("🤲 Đang thả vật...")
         
-        req = DetachRequest()
+        req = AttachRequest()
         req.model_name_1 = "robot"
         req.link_name_1 = "wrist_3_link"
         req.model_name_2 = self.target_object
         req.link_name_2 = "link"
-        
+        req.attach = False   
+
         try:
             self.detach_srv.call(req)
             rospy.loginfo("✅ Đã thả vật!")
