@@ -76,4 +76,7 @@
     <arg name="paused" value="$(arg paused)"/>
     <arg name="stopped_controllers" value="$(arg stopped_controllers)"/>
   </include>
+  <!-- Link Attacher để "nắm" vật -->
+  <node pkg="gazebo_ros_link_attacher" type="attach_detach" 
+        name="link_attacher_node" output="screen"/>
 </launch>
