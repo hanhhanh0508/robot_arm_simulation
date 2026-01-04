@@ -333,4 +333,10 @@
       <child link="${prefix}tool0"/>
     </joint>
   </xacro:macro>
+  <!-- Gazebo ROS Link Attacher -->
+  <gazebo>
+    <plugin name="gazebo_ros_link_attacher"
+            filename="libgazebo_ros_link_attacher.so"/>
+  </gazebo>
+
 </robot>
