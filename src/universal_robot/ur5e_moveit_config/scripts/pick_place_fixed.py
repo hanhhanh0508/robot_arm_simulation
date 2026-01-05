@@ -255,10 +255,27 @@ class FixedPickPlace:
         target_size = 0.05
         
         if self.spawn_box_in_gazebo(target_name, pick_pos[0], pick_pos[1], 
-                                     0, target_size, "green"):
-            self.target_object = target_name
-            rospy.loginfo("  ✓ Vật nhặt: (%.2f, %.2f, 0.00) 🟢" % 
-                         (pick_pos[0], pick_pos[1]))
+                             0, target_size, "green"):
+           self.target_object = target_name
+
+       # ====== ADD VÀO MOVEIT ======
+           pose_moveit = PoseStamped()
+           pose_moveit.header.frame_id = self.reference_frame
+           pose_moveit.pose.position.x = pick_pos[0]
+           pose_moveit.pose.position.y = pick_pos[1]
+           pose_moveit.pose.position.z = target_size / 2
+           pose_moveit.pose.orientation.w = 1.0
+
+           self.scene.add_box(
+                target_name,
+                pose_moveit,
+                size=(target_size, target_size, target_size)
+           )
+    # ============================
+
+           rospy.loginfo("  ✓ Vật nhặt: (%.2f, %.2f, 0.00) 🟢 (Gazebo + MoveIt)" %
+                  (pick_pos[0], pick_pos[1]))
+
         
         # Tạo ÍT vật cản hơn
         forbidden = [
