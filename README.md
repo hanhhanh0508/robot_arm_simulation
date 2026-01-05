@@ -16,24 +16,25 @@ Ubuntu + ROS Noetic
 
 MoveIt
 
-universal_robot
+universal\_robot
 
-ur5e_moveit_config
+ur5e\_moveit\_config
 
 Chạy demo
 
 Mở terminal 1
 
-source ~/ur5_ws/devel/setup.bash
+source ~/ur5\_ws/devel/setup.bash
 
-roslaunch ur5e_moveit_config demo.launch
+roslaunch ur5e\_moveit\_config demo.launch
+
 
 
 Mở terminal 2
 
-source ~/ur5_ws/devel/setup.bash
+source ~/ur5\_ws/devel/setup.bash
 
-rosrun ur5e_moveit_config ur5_moveit_control.py
+rosrun ur5e\_moveit\_config ur5\_moveit\_control.py
 
 Chức năng chính
 
@@ -43,7 +44,7 @@ Sinh 2 vật cản ngẫu nhiên
 
 Robot tự tìm đường tránh vật cản
 
-Điều chỉnh tốc độ & thời gian planning
+Điều chỉnh tốc độ \& thời gian planning
 
 Chạy thử di chuyển đơn giản
 
@@ -53,4 +54,37 @@ Robot chỉ mô phỏng (fake controller)
 
 Chuyển động hiển thị trong RViz
 
+###### ***~~~RViz CÓ VẬT CẢN VÀ TRÁNH VA CHẠM~~~***
+
+<i>cd project</i>
+
+<i>catkin\_make clean</i>
+
+<i>catkin\_make</i>
+
+<i>source devel/setup.bash</i>
+
+<i># Terminal 1: Khởi động Gazebo + UR5e</i>
+
+<i>roslaunch ur\_gazebo ur5e\_bringup.launch</i>
+
+
+
+<i># Terminal 2: MoveIt planning</i>
+
+<i>roslaunch ur5e\_moveit\_config moveit\_planning\_execution.launch sim:=true</i>
+
+
+
+<i># Terminal 3: RViz visualization</i>
+
+<i>roslaunch ur5e\_moveit\_config moveit\_rviz.launch config:=$(rospack find ur5e\_moveit\_config)/launch/moveit.rviz</i>
+
+
+
+<i># Terminal 4: Chạy script pick \& place</i>
+
+<i>rosrun ur5e\_moveit\_config ur5e\_with\_obstacles\_working.py</i>
+
+###### <i>**~~~**</i>
 
