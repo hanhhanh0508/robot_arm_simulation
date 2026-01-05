@@ -17,8 +17,8 @@ class SimpleTest:
         self.arm = MoveGroupCommander("manipulator")
         
         # CẤU HÌNH ĐƠN GIẢN
-        self.arm.set_planning_time(5.0)
-        self.arm.set_num_planning_attempts(3)
+        self.arm.set_planning_time(30.0)
+        self.arm.set_num_planning_attempts(50)
         self.arm.set_max_velocity_scaling_factor(0.1)  # Chậm lại
         self.arm.set_max_acceleration_scaling_factor(0.1)
         

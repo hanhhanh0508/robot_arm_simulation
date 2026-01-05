@@ -1,12 +1,11 @@
 gazebo_ros_control:
   pid_gains:
-    shoulder_pan_joint:  {p: 2000.0, i: 10.0, d: 100.0}
-    shoulder_lift_joint: {p: 2000.0, i: 10.0, d: 100.0}
-    elbow_joint:         {p: 2000.0, i: 10.0, d: 100.0}
-    wrist_1_joint:       {p: 500.0,  i: 5.0,  d: 50.0}
-    wrist_2_joint:       {p: 500.0,  i: 5.0,  d: 50.0}
-    wrist_3_joint:       {p: 500.0,  i: 5.0,  d: 50.0}
-
+    shoulder_pan_joint:  {p: 500.0,  i: 1.0,  d: 50.0}   # ✅ Giảm p từ 2000
+    shoulder_lift_joint: {p: 500.0,  i: 1.0,  d: 50.0}   # ✅ Giảm p từ 2000
+    elbow_joint:         {p: 500.0,  i: 1.0,  d: 50.0}   # ✅ Giảm p từ 2000
+    wrist_1_joint:       {p: 100.0,  i: 0.5,  d: 10.0}   # ✅ Giảm p từ 500
+    wrist_2_joint:       {p: 100.0,  i: 0.5,  d: 10.0}   # ✅ Giảm p từ 500
+    wrist_3_joint:       {p: 100.0,  i: 0.5,  d: 10.0}   # ✅ Giảm p từ 500
 
 ## 2. **LỖI CHÍNH: TIMED OUT khi di chuyển đến PICK**
 

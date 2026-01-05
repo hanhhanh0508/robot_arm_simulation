@@ -13,42 +13,14 @@ scaled_pos_joint_traj_controller:
     - wrist_3_joint
 
   constraints:
-    goal_time: 0.0  # ✅ ĐẶT = 0 để BỎ TIMEOUT!
-    stopped_velocity_tolerance: 0.2
-    shoulder_pan_joint: {trajectory: 0.3, goal: 0.3}
-    shoulder_lift_joint: {trajectory: 0.3, goal: 0.3}
-    elbow_joint: {trajectory: 0.3, goal: 0.3}
-    wrist_1_joint: {trajectory: 0.3, goal: 0.3}
-    wrist_2_joint: {trajectory: 0.3, goal: 0.3}
-    wrist_3_joint: {trajectory: 0.3, goal: 0.3}
+    goal_time: 0.0                          # ✅ BỎ TIMEOUT
+    stopped_velocity_tolerance: 0.5         # ✅ Tăng từ 0.2
+    shoulder_pan_joint: {trajectory: 0.5, goal: 0.5}     # ✅ Nới lỏng
+    shoulder_lift_joint: {trajectory: 0.5, goal: 0.5}    # ✅ Nới lỏng
+    elbow_joint: {trajectory: 0.5, goal: 0.5}            # ✅ Nới lỏng
+    wrist_1_joint: {trajectory: 0.5, goal: 0.5}          # ✅ Nới lỏng
+    wrist_2_joint: {trajectory: 0.5, goal: 0.5}          # ✅ Nới lỏng
+    wrist_3_joint: {trajectory: 0.5, goal: 0.5}          # ✅ Nới lỏng
 
   state_publish_rate: 500
   action_monitor_rate: 10
-
-# PID GAINS
-gazebo_ros_control:
-  pid_gains:
-    shoulder_pan_joint:
-      p: 1000.0
-      i: 10.0
-      d: 100.0
-    shoulder_lift_joint:
-      p: 1000.0
-      i: 10.0
-      d: 100.0
-    elbow_joint:
-      p: 1000.0
-      i: 10.0
-      d: 100.0
-    wrist_1_joint:
-      p: 500.0
-      i: 5.0
-      d: 50.0
-    wrist_2_joint:
-      p: 500.0
-      i: 5.0
-      d: 50.0
-    wrist_3_joint:
-      p: 500.0
-      i: 5.0
-      d: 50.0
