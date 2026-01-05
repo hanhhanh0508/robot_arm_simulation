@@ -76,6 +76,7 @@
   </include>
   
   <!-- ✅ FIX: Chạy script attach.py thay vì attach_detach -->
+<<<<<<< HEAD
   <node pkg="gazebo_ros_link_attacher"
       type="demo.py"
       name="link_attacher"
@@ -83,3 +84,12 @@
 
 </launch>
 
+=======
+<!--
+  <node pkg="gazebo_ros_link_attacher" type="demo.py" 
+        name="link_attacher_node" output="screen"/> -->
+<node pkg="gazebo_ros_link_attacher" type="link_attacher_node.py"
+      name="link_attacher_node" output="screen"/>
+
+</launch>
+>>>>>>> 672b042b9d44519619df1111dbddf5205679376d
