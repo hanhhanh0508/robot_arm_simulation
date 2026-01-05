@@ -14,14 +14,14 @@ scaled_pos_joint_traj_controller:
     - wrist_3_joint
 
   constraints:
-    goal_time: 0.6
-    stopped_velocity_tolerance: 0.05
-    shoulder_pan_joint: {trajectory: 0.1, goal: 0.1}
-    shoulder_lift_joint: {trajectory: 0.1, goal: 0.1}
-    elbow_joint: {trajectory: 0.1, goal: 0.1}
-    wrist_1_joint: {trajectory: 0.1, goal: 0.1}
-    wrist_2_joint: {trajectory: 0.1, goal: 0.1}
-    wrist_3_joint: {trajectory: 0.1, goal: 0.1}
+    goal_time: 5.0                    # ✅ Tăng lên 5 giây
+    stopped_velocity_tolerance: 0.1   # ✅ Nới lỏng
+    shoulder_pan_joint: {trajectory: 0.2, goal: 0.2}  # ✅ Tăng tất cả
+    shoulder_lift_joint: {trajectory: 0.2, goal: 0.2}
+    elbow_joint: {trajectory: 0.2, goal: 0.2}
+    wrist_1_joint: {trajectory: 0.2, goal: 0.2}
+    wrist_2_joint: {trajectory: 0.2, goal: 0.2}
+    wrist_3_joint: {trajectory: 0.2, goal: 0.2}
 
   state_publish_rate: 500
   action_monitor_rate: 10
