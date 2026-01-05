@@ -2,7 +2,6 @@ joint_state_controller:
   type: joint_state_controller/JointStateController
   publish_rate: 500
 
-
 scaled_pos_joint_traj_controller:
   type: position_controllers/JointTrajectoryController
   joints:
@@ -14,19 +13,19 @@ scaled_pos_joint_traj_controller:
     - wrist_3_joint
 
   constraints:
-    goal_time: 5.0                    # ✅ Tăng lên 5 giây
-    stopped_velocity_tolerance: 0.1   # ✅ Nới lỏng
-    shoulder_pan_joint: {trajectory: 0.2, goal: 0.2}  # ✅ Tăng tất cả
-    shoulder_lift_joint: {trajectory: 0.2, goal: 0.2}
-    elbow_joint: {trajectory: 0.2, goal: 0.2}
-    wrist_1_joint: {trajectory: 0.2, goal: 0.2}
-    wrist_2_joint: {trajectory: 0.2, goal: 0.2}
-    wrist_3_joint: {trajectory: 0.2, goal: 0.2}
+    goal_time: 0.0  # ✅ ĐẶT = 0 để BỎ TIMEOUT!
+    stopped_velocity_tolerance: 0.2
+    shoulder_pan_joint: {trajectory: 0.3, goal: 0.3}
+    shoulder_lift_joint: {trajectory: 0.3, goal: 0.3}
+    elbow_joint: {trajectory: 0.3, goal: 0.3}
+    wrist_1_joint: {trajectory: 0.3, goal: 0.3}
+    wrist_2_joint: {trajectory: 0.3, goal: 0.3}
+    wrist_3_joint: {trajectory: 0.3, goal: 0.3}
 
   state_publish_rate: 500
   action_monitor_rate: 10
 
-# PID GAINS - QUAN TRỌNG!
+# PID GAINS
 gazebo_ros_control:
   pid_gains:
     shoulder_pan_joint:
