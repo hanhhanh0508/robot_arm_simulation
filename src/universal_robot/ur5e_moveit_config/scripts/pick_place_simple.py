@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-UR5e Pick & Place VỚI GRIPPER GAZEBO
-- Spawn vật cản vào Gazebo
-- Attach/Detach object bằng Gazebo link_attacher
+UR5e Pick & Place DEMO - KHÔNG cần Link Attacher
+Chỉ simulate attach/detach bằng cách lưu trạng thái
 """
 import sys
 import rospy
@@ -17,7 +16,6 @@ from geometry_msgs.msg import Pose, PoseStamped
 from visualization_msgs.msg import Marker
 from tf.transformations import quaternion_from_euler
 from gazebo_msgs.srv import SpawnModel, DeleteModel, GetModelState
-from gazebo_ros_link_attacher.srv import Attach, AttachRequest
 
 def normalize_angle(angle):
     """Chuẩn hóa góc về [-π, π]"""
@@ -27,9 +25,9 @@ def normalize_angle(angle):
         angle += 2.0 * math.pi
     return angle
 
-class PickPlaceWithGripper:
+class SimplePickPlace:
     def __init__(self):
-        rospy.init_node("pick_place_gripper", anonymous=True)
+        rospy.init_node("simple_pick_place", anonymous=True)
         moveit_commander.roscpp_initialize(sys.argv)
         
         # MoveIt
@@ -71,30 +69,26 @@ class PickPlaceWithGripper:
         self.reference_frame = self.arm.get_planning_frame()
         self.marker_pub = rospy.Publisher("/visualization_marker", Marker, queue_size=10)
         
-        # ✅ Kết nối Gazebo services
+        # Kết nối Gazebo services
         rospy.loginfo("Đang kết nối Gazebo services...")
         rospy.wait_for_service('/gazebo/spawn_sdf_model', timeout=5.0)
         rospy.wait_for_service('/gazebo/delete_model', timeout=5.0)
         self.spawn_model = rospy.ServiceProxy('/gazebo/spawn_sdf_model', SpawnModel)
         self.delete_model = rospy.ServiceProxy('/gazebo/delete_model', DeleteModel)
         self.get_model_state = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
-        
-        # ✅ Kết nối Link Attacher (để "nắm" vật)
-        rospy.loginfo("Đang kết nối Link Attacher...")
-        rospy.wait_for_service('/link_attacher_node/attach', timeout=5.0)
-        self.attach_srv = rospy.ServiceProxy('/link_attacher_node/attach', Attach)
-        rospy.loginfo("✓ Kết nối Gazebo + Attacher OK!")
+        rospy.loginfo("✓ Kết nối Gazebo OK!")
         
         # Các vị trí
         self.positions = {
             "home":  [0.3, 0.0, 0.45],
-            "pick":  [0.50, 0.30, 0.15],  # 🔽 HẠ THẤP để chạm vật
-            "place": [0.50, -0.30, 0.15],
+            "pick":  [0.50, 0.30, 0.12],  # Hạ thấp để "chạm" vật
+            "place": [0.50, -0.30, 0.12],
         }
         
         # Lưu list vật
         self.spawned_obstacles = []
-        self.target_object = None  # Vật cần nhặt
+        self.target_object = None
+        self.holding_object = False  # Trạng thái đang cầm vật
         
         rospy.loginfo("="*70)
         rospy.loginfo("✓ HỆ THỐNG SẴN SÀNG!")
@@ -174,8 +168,15 @@ class PickPlaceWithGripper:
         rospy.logerr("✗ Thất bại sau %d lần thử!" % max_retries)
         return False
     
-    def spawn_box_in_gazebo(self, name, x, y, z, size):
+    def spawn_box_in_gazebo(self, name, x, y, z, size, color="red"):
         """Spawn hộp vào Gazebo"""
+        if color == "green":
+            ambient = "0 1 0 1"
+            diffuse = "0 1 0 1"
+        else:
+            ambient = "1 0 0 1"
+            diffuse = "1 0 0 1"
+            
         box_sdf = """
         <?xml version='1.0'?>
         <sdf version='1.6'>
@@ -199,14 +200,14 @@ class PickPlaceWithGripper:
                   </box>
                 </geometry>
                 <material>
-                  <ambient>1 0 0 1</ambient>
-                  <diffuse>1 0 0 1</diffuse>
+                  <ambient>%s</ambient>
+                  <diffuse>%s</diffuse>
                 </material>
               </visual>
             </link>
           </model>
         </sdf>
-        """ % (name, size, size, size, size, size, size)
+        """ % (name, size, size, size, size, size, size, ambient, diffuse)
         
         initial_pose = Pose()
         initial_pose.position.x = x
@@ -242,60 +243,20 @@ class PickPlaceWithGripper:
         
         self.spawned_obstacles = []
         self.target_object = None
+        self.holding_object = False
         
         rospy.sleep(0.5)
         
-        # 🎯 Spawn vật cần nhặt (màu xanh)
+        # Spawn vật cần nhặt (màu xanh)
         target_name = "target_box"
         pick_pos = self.positions["pick"]
         target_size = 0.05
         
-        target_sdf = """
-        <?xml version='1.0'?>
-        <sdf version='1.6'>
-          <model name='%s'>
-            <static>false</static>
-            <link name='link'>
-              <inertial>
-                <mass>0.1</mass>
-              </inertial>
-              <collision name='collision'>
-                <geometry>
-                  <box>
-                    <size>%f %f %f</size>
-                  </box>
-                </geometry>
-              </collision>
-              <visual name='visual'>
-                <geometry>
-                  <box>
-                    <size>%f %f %f</size>
-                  </box>
-                </geometry>
-                <material>
-                  <ambient>0 1 0 1</ambient>
-                  <diffuse>0 1 0 1</diffuse>
-                </material>
-              </visual>
-            </link>
-          </model>
-        </sdf>
-        """ % (target_name, target_size, target_size, target_size, 
-               target_size, target_size, target_size)
-        
-        target_pose = Pose()
-        target_pose.position.x = pick_pos[0]
-        target_pose.position.y = pick_pos[1]
-        target_pose.position.z = target_size/2  # Đặt trên mặt đất
-        target_pose.orientation.w = 1.0
-        
-        try:
-            self.spawn_model(target_name, target_sdf, "", target_pose, "world")
+        if self.spawn_box_in_gazebo(target_name, pick_pos[0], pick_pos[1], 
+                                     0, target_size, "green"):
             self.target_object = target_name
-            rospy.loginfo("  ✓ Vật nhặt: (%.2f, %.2f, %.2f) 🟢" % 
-                         (pick_pos[0], pick_pos[1], target_size/2))
-        except Exception as e:
-            rospy.logerr("❌ Không spawn được vật nhặt: %s" % str(e))
+            rospy.loginfo("  ✓ Vật nhặt: (%.2f, %.2f, 0.00) 🟢" % 
+                         (pick_pos[0], pick_pos[1]))
         
         # Tạo vật cản đỏ
         forbidden = [
@@ -337,7 +298,7 @@ class PickPlaceWithGripper:
             self.scene.add_box(name, pose_moveit, (size, size, size))
             
             # Gazebo
-            if self.spawn_box_in_gazebo(name, x, y, z, size):
+            if self.spawn_box_in_gazebo(name, x, y, z, size, "red"):
                 self.spawned_obstacles.append(name)
                 rospy.loginfo("  ✓ Vật cản %d: (%.2f, %.2f, %.2f) 🔴" % 
                              (created+1, x, y, z))
@@ -346,49 +307,27 @@ class PickPlaceWithGripper:
         rospy.sleep(1.5)
         rospy.loginfo("✓ Đã tạo %d vật cản + 1 vật nhặt" % created)
     
-    def attach_object(self):
-        """Gắn vật vào gripper"""
+    def pick_object(self):
+        """Giả lập nhặt vật"""
         if not self.target_object:
             rospy.logwarn("⚠️ Không có vật để nhặt!")
             return False
         
         rospy.loginfo("🤏 Đang nhặt vật '%s'..." % self.target_object)
-        
-        req = AttachRequest()
-        req.model_name_1 = "robot"  # Robot
-        req.link_name_1 = "wrist_3_link"  # Link gần end-effector
-        req.model_name_2 = self.target_object
-        req.link_name_2 = "link"
-        req.attach = True 
-        try:
-            self.attach_srv.call(req)
-            rospy.loginfo("✅ Đã nhặt vật!")
-            return True
-        except Exception as e:
-            rospy.logerr("❌ Lỗi nhặt vật: %s" % str(e))
-            return False
+        self.holding_object = True
+        rospy.loginfo("✅ Đã nhặt vật! (giả lập)")
+        return True
     
-    def detach_object(self):
-        """Thả vật ra"""
-        if not self.target_object:
+    def place_object(self):
+        """Giả lập đặt vật"""
+        if not self.holding_object:
+            rospy.logwarn("⚠️ Không có vật đang cầm!")
             return False
         
-        rospy.loginfo("🤲 Đang thả vật...")
-        
-        req = AttachRequest()
-        req.model_name_1 = "robot"
-        req.link_name_1 = "wrist_3_link"
-        req.model_name_2 = self.target_object
-        req.link_name_2 = "link"
-        req.attach = False   
-
-        try:
-            self.detach_srv.call(req)
-            rospy.loginfo("✅ Đã thả vật!")
-            return True
-        except Exception as e:
-            rospy.logerr("❌ Lỗi thả vật: %s" % str(e))
-            return False
+        rospy.loginfo("🤲 Đang đặt vật...")
+        self.holding_object = False
+        rospy.loginfo("✅ Đã đặt vật! (giả lập)")
+        return True
     
     def draw_marker(self, position, color, label, marker_id):
         """Vẽ marker"""
@@ -437,9 +376,9 @@ class PickPlaceWithGripper:
         rospy.sleep(0.5)
     
     def demo_pick_place(self):
-        """Demo pick & place CÓ THẬT"""
+        """Demo pick & place"""
         rospy.loginfo("\n" + "="*70)
-        rospy.loginfo("🚀 DEMO: PICK & PLACE THẬT VỚI GRIPPER")
+        rospy.loginfo("🚀 DEMO: PICK & PLACE (SIMULATION)")
         rospy.loginfo("="*70)
         
         self.clear_all()
@@ -462,7 +401,7 @@ class PickPlaceWithGripper:
         
         # 2. Đến PICK (phía trên)
         pick_above = list(self.positions["pick"])
-        pick_above[2] += 0.15  # Nâng cao 15cm
+        pick_above[2] += 0.15
         if not self.move_to_position(pick_above, "ABOVE PICK"):
             rospy.logwarn("⚠️ Không đến được ABOVE PICK")
             return
@@ -474,8 +413,8 @@ class PickPlaceWithGripper:
             return
         rospy.sleep(1)
         
-        # 4. 🤏 NHẶT VẬT
-        self.attach_object()
+        # 4. NHẶT VẬT (giả lập)
+        self.pick_object()
         rospy.sleep(1)
         
         # 5. Nâng lên
@@ -495,8 +434,8 @@ class PickPlaceWithGripper:
             rospy.logwarn("⚠️ Không đến được PLACE")
         rospy.sleep(1)
         
-        # 8. 🤲 THẢ VẬT
-        self.detach_object()
+        # 8. ĐẶT VẬT (giả lập)
+        self.place_object()
         rospy.sleep(1)
         
         # 9. Nâng lên
@@ -508,35 +447,17 @@ class PickPlaceWithGripper:
         self.move_to_position(self.positions["home"], "HOME")
         
         rospy.loginfo("\n" + "="*70)
-        rospy.loginfo("✅ HOÀN THÀNH DEMO PICK & PLACE THẬT!")
+        rospy.loginfo("✅ HOÀN THÀNH DEMO PICK & PLACE!")
         rospy.loginfo("="*70)
 
 def main():
     try:
-        # ⚠️ Kiểm tra Link Attacher
-        try:
-            rospy.wait_for_service('/link_attacher_node/attach', timeout=2.0)
-        except:
-            rospy.logerr("\n" + "="*70)
-            rospy.logerr("❌ THIẾU GAZEBO_ROS_LINK_ATTACHER!")
-            rospy.logerr("="*70)
-            rospy.logerr("Cài đặt:")
-            rospy.logerr("  cd ~/ur5_ws/src")
-            rospy.logerr("  git clone https://github.com/pal-robotics/gazebo_ros_link_attacher.git")
-            rospy.logerr("  cd ~/ur5_ws")
-            rospy.logerr("  catkin_make")
-            rospy.logerr("  source devel/setup.bash")
-            rospy.logerr("\nSau đó thêm vào launch file:")
-            rospy.logerr("  <node pkg=\"gazebo_ros_link_attacher\" type=\"attach\" name=\"link_attacher_node\"/>")
-            rospy.logerr("="*70)
-            return
-        
-        controller = PickPlaceWithGripper()
+        controller = SimplePickPlace()
         
         print("\n" + "="*70)
-        print("🤖 PICK & PLACE THẬT VỚI GRIPPER")
+        print("🤖 PICK & PLACE DEMO (SIMULATION)")
         print("="*70)
-        print("✅ Có gripper thật (attach/detach)")
+        print("ℹ️  Không cần Link Attacher")
         print("✅ Vật XANH 🟢 = vật nhặt")
         print("✅ Vật ĐỎ 🔴 = vật cản")
         print("="*70)
