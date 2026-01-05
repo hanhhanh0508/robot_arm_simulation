@@ -1,0 +1,14 @@
+<launch>
+  <!-- Load robot description -->
+  <param name="robot_description" command="$(find xacro)/xacro '$(find ur_description)/urdf/ur5e_with_attach.xacro'" />
+
+  <!-- Robot state publisher -->
+  <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher"/>
+
+  <!-- Gazebo -->
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="paused" value="false"/>
+    <arg name="gui" value="true"/>
+  </include>
+</launch>
+
