@@ -1,0 +1,4 @@
+trajectory_execution:
+  allowed_execution_duration_scaling: 3.0  # Tăng lên 3x
+  allowed_goal_duration_margin: 2.0        # Thêm 2 giây margin
+  execution_duration_monitoring: false     # Tắt giám sát thời gian
