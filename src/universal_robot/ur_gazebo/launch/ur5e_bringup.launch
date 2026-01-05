@@ -41,7 +41,7 @@
   <arg name="controller_config_file" default="$(find ur_gazebo)/config/ur5e_controllers.yaml" doc="Config file used for defining the ROS-Control controllers."/>
   <arg name="controllers" default="joint_state_controller scaled_pos_joint_traj_controller"/>
 
-  <arg name="stopped_controllers" default="" />
+  <arg name="stopped_controllers" default="joint_group_eff_controller" doc="Controllers that are initally loaded, but not started."/>
 
   <!-- robot_state_publisher configuration -->
   <arg name="tf_prefix" default="" doc="tf_prefix used for the robot."/>
@@ -74,7 +74,8 @@
     <arg name="paused" value="$(arg paused)"/>
     <arg name="stopped_controllers" value="$(arg stopped_controllers)"/>
   </include>
-  <!-- Link Attacher để "nắm" vật -->
-  <node pkg="gazebo_ros_link_attacher" type="attach_detach" 
+  
+  <!-- ✅ FIX: Chạy script attach.py thay vì attach_detach -->
+  <node pkg="gazebo_ros_link_attacher" type="demo.py" 
         name="link_attacher_node" output="screen"/>
 </launch>
