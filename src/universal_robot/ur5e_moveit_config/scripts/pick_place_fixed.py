@@ -88,6 +88,40 @@ class FixedPickPlace:
         for i, name in enumerate(msg.name):
             if name in self.joint_names:
                 self.current_joints[name] = msg.position[i]
+        def demo_gazebo_move_lr_ud(self, loops=2):
+      
+        rospy.loginfo("\n" + "="*70)
+        rospy.loginfo("🎮 DEMO GAZEBO: LEFT - RIGHT - UP - DOWN")
+        rospy.loginfo("="*70)
+
+        base = self.positions["home"]
+
+        poses = {
+            "CENTER": base,
+            "LEFT":   [base[0], base[1] + 0.20, base[2]],
+            "RIGHT":  [base[0], base[1] - 0.20, base[2]],
+            "UP":     [base[0], base[1], base[2] + 0.15],
+            "DOWN":   [base[0], base[1], base[2] - 0.10],
+        }
+
+        for i in range(loops):
+            rospy.loginfo(f"\n🔁 Loop {i+1}/{loops}")
+
+            for name, pos in poses.items():
+                if rospy.is_shutdown():
+                    return
+
+                rospy.loginfo(f"➡️ {name}")
+                if not self.move_to_position(pos, name):
+                    rospy.logwarn(f"⚠️ Không tới được {name}")
+                rospy.sleep(1.5)
+
+        # Quay về HOME
+        self.move_to_position(self.positions["home"], "HOME")
+
+        rospy.loginfo("\n" + "="*70)
+        rospy.loginfo("✅ HOÀN THÀNH DEMO GAZEBO MOVE")
+        rospy.loginfo("="*70)
     
     def execute_trajectory_direct(self, trajectory):
         """Execute trajectory với TIMEOUT LỚN"""
@@ -472,18 +506,26 @@ def main():
         print("✅ Chỉ 1 vật cản thay vì 2")
         print("="*70)
         
-        while not rospy.is_shutdown():
-            cmd = input("\nNhập lệnh (1=Chạy demo, q=Thoát): ").strip().lower()
-            
+         while not rospy.is_shutdown():
+            cmd = input(
+                "\nNhập lệnh:\n"
+                " 1 = Pick & Place demo\n"
+                " 2 = Gazebo Left-Right-Up-Down demo\n"
+                " q = Thoát\n"
+                "👉 "
+            ).strip().lower()
+
             if cmd == '1':
                 controller.demo_pick_place()
+            elif cmd == '2':
+                controller.demo_gazebo_move_lr_ud(loops=3)
             elif cmd in ['q', 'quit']:
                 rospy.loginfo("👋 Thoát chương trình")
                 controller.clear_all()
                 break
             else:
                 print("❌ Lệnh không hợp lệ!")
-        
+  
     except rospy.ROSInterruptException:
         pass
     except KeyboardInterrupt:
