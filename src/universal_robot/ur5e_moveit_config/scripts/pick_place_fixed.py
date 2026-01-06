@@ -88,7 +88,7 @@ class FixedPickPlace:
         for i, name in enumerate(msg.name):
             if name in self.joint_names:
                 self.current_joints[name] = msg.position[i]
-        def demo_gazebo_move_lr_ud(self, loops=2):
+    def demo_gazebo_move_lr_ud(self, loops=2):
       
         rospy.loginfo("\n" + "="*70)
         rospy.loginfo("🎮 DEMO GAZEBO: LEFT - RIGHT - UP - DOWN")
@@ -506,7 +506,7 @@ def main():
         print("✅ Chỉ 1 vật cản thay vì 2")
         print("="*70)
         
-         while not rospy.is_shutdown():
+        while not rospy.is_shutdown():
             cmd = input(
                 "\nNhập lệnh:\n"
                 " 1 = Pick & Place demo\n"
